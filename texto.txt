@@ -1,0 +1,32 @@
+
+ /*Mostrar usuarios en la vista del chat Administrador*/
+  databaseUsuarios.on('value', function(snapshot) {
+    let usuarios;
+    snapshot.forEach(function(e) {
+     let elemento = e.val();
+     let usuario = elemento.username;
+
+     usuarios += `<hr>
+     <ul>
+      <li>
+        <a href="#" ${usuario}>
+      </li>
+     </ul>`;
+   });
+   listaUsuarios.innerHTML = usuai;
+  })
+
+
+
+databaseRefComments.on("child_added", snapshot => {
+  let comment = snapshot.val();
+  addComment(comment.name, comment.comment, comment.time);
+  });
+
+  const addComment = (name, comment, timeStamp) => {
+  let comments = document.getElementById("comments");
+  comments.innerHTML = `<hr>        
+    <span id="horaComentario">${timeStamp}</span> <h5 id="nameUser">${name} </h5>
+    <p id="comentarioUser"> ${comment}</p>${comments.innerHTML}
+    `;
+  }
