@@ -19,11 +19,14 @@
   const enviar = document.getElementById('enviar');
   const contenedor = document.getElementById('contenedorMensajes');
   const textSesion = document.getElementById("textoSesion");  
-  var nameInput = document.getElementById("name");
+  const nameInput = document.getElementById("name");
   const listUsers = document.getElementById("listaUsuarios");
   
-  const admon= "Administrador Mamma Mia";
-  const usuariosVista = '';
+  const admon = "Administrador Mamma Mia";
+  const anonimo ="Anónimo";
+  const cadena = '';
+  var usuarioConectado = '';
+
 
   var user = firebase.auth().currentUser;
 
@@ -57,33 +60,44 @@
       var photo = result.user.photoURL;
       // The Google credential, this contain the Google access token:
       let credential = result.credential;
-     
+
+      /*Guarda el nombre del usuario conectado*/ 
+      usuarioConectado = userName;
+      
       /*Guardar Usuario*/
-      firebase.database().ref('users/' +  userName).update({
+      firebase.database().ref('users/' +  usuarioConectado).update({
         username: userName,
         email: email,
         foto: photo
       });   
       /*verificar usuarios en linea */
-      firebase.database().ref('conexion/'+ userName).update({
+      firebase.database().ref('conexion/'+ usuarioConectado).update({
         username: userName,
         status: 'conectado'
       });   
     }).catch(error => console.error(`Error : ${error.code}: ${error.message}`));
+
+    if(usuarioConectado != admon){
+      vistaCliente();
+    }else if(usuarioConectado == admon){
+      vistaAdmon();
+    }
   } 
-  
+
  function cerrarSesion() {
     firebase.auth().signOut()
       .then(() =>{
         console.log('te has deslogeado')
         nameInput.value = '';
       }).catch(error => console.error(`Error : ${error.code}: ${error.message}`));
+
     /*verificar usuarios en linea */
-    firebase.database().ref('conexion/'+ nameInput.value).update({
-      name: nameInput.value,
+    firebase.database().ref('conexion/'+ usuarioConectado).update({
+      name: usuarioConectado,
       status: 'desconectado'
     });          
 
+    borrarMensajes();
   }
 
   //Anonimus function timeStamp, par aagregar fecha y hora al comentario
@@ -110,7 +124,7 @@ databaseConexion.on('value', function (snapshot) {
       html += `
       <tr>
         <td>
-          <input type="checkbox" name="checkbox" id="usuarioSelecionado${nombre}" value="${nombre}"><label for="usuarioSelecionado${nombre}">${nombre}</label>
+          <input type="checkbox" name="checkbox" id="${nombre}" value="${nombre}"><label for="${nombre}">${nombre}</label>
         </td>
         <td>
           <i class="material-icons light-green-text accent-3-text">check_circle</i>
@@ -131,58 +145,106 @@ databaseConexion.on('value', function (snapshot) {
   listUsers.innerHTML = html;
 });
 
-/*Usuario seleccionado*/
-
-
 /*Evento para enviar y guardar mensajes */
 function guardarMensaje(){
+
   /*Recupera el mensaje ingresado */
   var mensajeEnviado = mensaje.value;
   var usuarioConectado = nameInput.value;
-  console.log(usuarioConectado);
+  
+  /*Envia los datos a la BD*/
   if( usuarioConectado != admon){
-    console.log(usuarioConectado);
-    console.log('entre al if');
-    /*Envia los datos a la BD*/
-    firebase.database().ref('chat/' + usuarioConectado + '/messages/').push({
-      
+    firebase.database().ref('chat/' + usuarioConectado).push({
       name : usuarioConectado,
       message: mensajeEnviado,
       time: timeStamp()
     });
-    console.log(usuarioConectado);   
     mensaje.value = "";
+    vistaCliente();
   }
   else{
-    console.log('entre al else');
+    /*Usuario seleccionado*/
+    var cliente = document.getElementsByName("checkbox");
+    for (var x=0; x < cliente.length; x++) {	
+      if (cliente[x].checked) {
+        usuarioConectado = cliente[x].id;
+      }
+    }
     /*Envia los datos a la BD*/
-    firebase.database().ref('chat/' + usuarioConectado + '/answers/').push({
-      name : usuarioConectado,
+    firebase.database().ref('chat/' + usuarioConectado).push({
+      name : admon,
       message: mensajeEnviado,
       time: timeStamp()
     });  
-
     mensaje.value = "";
+    vistaAdmon();
   }
-  
 }
 
- /*Mostrar los mensajes enviador en el contenedor *//*
- databaseChat.on('value', function(snapshot){
-   var html ='';
-   snapshot.forEach(function(e) {
-     var elemento = e.val();
-     var usuario = elemento.name;
-     var mensajeEnviado = elemento.message;
-     var fecha = elemento.time;
-     //if (usuario == nameInput.value || usuario == admon){
-       html += `<hr>
-      <h5 id="nombreUsuario">${usuario} </h5>
-      <p id="mensajes"> ${mensajeEnviado}</p>
-      <span id="fecha">${fecha}</span>`;
-     //}
-   });
-   contenedor.innerHTML = html;
-   /*Posicionar el scroll*/ /*
-   contenedor.scrollTop =contenedor.scrollHeight;
- });*/
+ /*Mostrar los mensajes enviador en el contenedor */
+/*Cliente */
+function vistaCliente(){
+  console.log("Vista cliente");
+  firebase.database().ref('chat/' +  nameInput.value).on('value', function(snapshot){
+    var html ='';
+    snapshot.forEach(function(e) {
+      var elemento = e.val();
+      var usuario = elemento.name;
+      var mensajeEnviado = elemento.message;
+      var fecha = elemento.time;
+        html += `<hr>
+       <h5 id="nombreUsuario">${usuario} </h5>
+       <p id="mensajes"> ${mensajeEnviado}</p>
+       <span id="fecha">${fecha}</span>`;
+    });
+    
+    contenedor.innerHTML = html;
+    /*Posicionar el scroll*/ 
+    contenedor.scrollTop =contenedor.scrollHeight;
+  });
+
+}
+
+/*Administrador */
+function vistaAdmon() {
+  console.log("Vista Admon ");
+
+  /*Usuario seleccionado*/
+    var cliente = document.getElementsByName("checkbox");
+    for (var x=0; x < cliente.length; x++) {	
+      if (cliente[x].checked) {
+        usuarioConectado = cliente[x].id;
+        console.log("V " + usuarioConectado);
+      }
+    }
+    firebase.database().ref('chat/' +  usuarioConectado).on('value', function(snapshot){
+    var html ='';
+    snapshot.forEach(function(e) {
+      var elemento = e.val();
+      console.log("Elemento" + elemento);
+      var usuario = elemento.name;
+      console.log("nombre " + usuario);
+      var mensajeEnviado = elemento.message;
+      console.log("mensaje " + mensajeEnviado);
+      var fecha = elemento.time;
+      console.log("fecha " + fecha);
+        html += `<hr>
+       <h5 id="nombreUsuario">${usuario} </h5>
+       <p id="mensajes"> ${mensajeEnviado}</p>
+       <span id="fecha">${fecha}</span>`;
+    });
+    contenedor.innerHTML = html;
+    /*Posicionar el scroll*/ 
+    contenedor.scrollTop =contenedor.scrollHeight;
+  });
+}
+
+/*Borrar los mensajes al cerrar sesión*/
+ function borrarMensajes(){
+    var html ='';
+    html += `<hr>
+      <h5 id="nombreUsuario"></h5>
+      <p id="mensajes"></p>
+      <span id="fecha"></span>`;
+    contenedor.innerHTML = html;
+ }
