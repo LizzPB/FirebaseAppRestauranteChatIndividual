@@ -184,7 +184,6 @@ function guardarMensaje(){
  /*Mostrar los mensajes enviador en el contenedor */
 /*Cliente */
 function vistaCliente(){
-  console.log("Vista cliente");
   firebase.database().ref('chat/' +  nameInput.value).on('value', function(snapshot){
     var html ='';
     snapshot.forEach(function(e) {
@@ -202,32 +201,25 @@ function vistaCliente(){
     /*Posicionar el scroll*/ 
     contenedor.scrollTop =contenedor.scrollHeight;
   });
-
 }
 
 /*Administrador */
 function vistaAdmon() {
-  console.log("Vista Admon ");
-
   /*Usuario seleccionado*/
     var cliente = document.getElementsByName("checkbox");
     for (var x=0; x < cliente.length; x++) {	
       if (cliente[x].checked) {
         usuarioConectado = cliente[x].id;
-        console.log("V " + usuarioConectado);
       }
     }
     firebase.database().ref('chat/' +  usuarioConectado).on('value', function(snapshot){
     var html ='';
     snapshot.forEach(function(e) {
       var elemento = e.val();
-      console.log("Elemento" + elemento);
       var usuario = elemento.name;
-      console.log("nombre " + usuario);
       var mensajeEnviado = elemento.message;
-      console.log("mensaje " + mensajeEnviado);
       var fecha = elemento.time;
-      console.log("fecha " + fecha);
+
         html += `<hr>
        <h5 id="nombreUsuario">${usuario} </h5>
        <p id="mensajes"> ${mensajeEnviado}</p>
